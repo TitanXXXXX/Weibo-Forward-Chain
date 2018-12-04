@@ -1,5 +1,7 @@
 # Weibo-Forward-Chain
 fingure out the forward chain of weibo
 
-Version 1
-the data struct and chain mode see v1.pdf
+fix the problem of v1 that some forward nodes could find the attribute--href_self
+
+Version 2
+the data struct and chain mode see v2.pdf
