@@ -69,10 +69,15 @@ def handle_one_fwd(parent_name,item):
     fwd_text_span = item.find_element_by_css_selector("span[node-type='text']")
     # judge whether this forward is child forward, if it is not, return an empty list
     # else, tackle the info in it
+    '''
+    problem mark
+    '''
     if "//@" in fwd_text_span.text:
-        a_parent = fwd_text_span.find_element_by_tag_name('a')
-        parent_name = a_parent.get_attribute('usercard').split('=')[1]
-
+        a_users_at = fwd_text_span.find_elements_by_css_selector("a[extra-data='type=atname']")
+        before_delimeter_str = fwd_text_span.text.split("//@")[0]
+        a_parent_location = before_delimeter_str.count('@')
+        parent_name = a_users_at[a_parent_location].get_attribute('usercard').split("=")[1]
+        # print(parent_name)
     fwd_instance = fwd_node(parent_name, usr_info, href_self, subfwd_like_quant, subfwd_quant)
 
     return fwd_instance
@@ -105,6 +110,12 @@ def handle_one_page(parent_name,page_of_fwds):
     return fwd_instances_list
 
 def handle_one_web(source_web):
+    '''
+    the function to handle a source web that contains the original event
+    :param source_web:
+    :return: tuple(root_usr,fwd_list), which root_usr is a fwd_node instance of the root user and
+            fwd_list is the list of all fwds
+    '''
     print("Begin to handle "+source_web)
 
     options = webdriver.ChromeOptions()
@@ -120,11 +131,24 @@ def handle_one_web(source_web):
     #find the button for forward details and then click
     fwd_click_items = browser.find_element_by_class_name('WB_handle')
     fwd_click_item = fwd_click_items.find_element_by_css_selector("a[action-type='fl_forward']")
+
+    fwd_quant = int(fwd_click_item.find_elements_by_tag_name('em')[1].text)
+    like_item = fwd_click_items.find_element_by_css_selector("a[action-type='fl_forward']")
+    like_quant = int(like_item.find_elements_by_tag_name('em')[1].text)
+
     fwd_click_item.click()
 
     #find the root user name
-    src_info_img = browser.find_element_by_css_selector("img[class='W_face_radius']")
-    root_name = src_info_img.get_attribute('alt')
+    src_info_div = browser.find_element_by_css_selector("div[class='WB_info']")
+    a_info = src_info_div.find_element_by_tag_name('a')
+    root_id = a_info.get_attribute('usercard').split("&")[0].split("=")[1]
+    root_name = a_info.text
+    root_user_info = {
+        'usr_name': root_name,
+        'usr_id': root_id,
+        'usr_blog': a_info.get_attribute('href')
+    }
+
 
     counter = 0
     fwds_list = []
@@ -169,9 +193,11 @@ def handle_one_web(source_web):
     # close the browser
     browser.delete_all_cookies()
     browser.close()
-    return fwds_list
 
-fwds_list = handle_one_web(source)
+    root_user = fwd_node("Root",root_user_info,source_web,like_quant,fwd_quant)
 
-with open('./NBA.pkl','wb') as fp:
-    pickle.dump(fwds_list,fp,pickle.HIGHEST_PROTOCOL)
+    return (root_user,fwds_list)
+
+
+# with open('./NBA.pkl','wb') as fp:
+#     pickle.dump(fwds_list,fp,pickle.HIGHEST_PROTOCOL)
